@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestión de Cartera de Seguros — Demo</title>
+<style>
+:root{--bg:#f4f7f7;--card:#fff;--fg:#14262a;--mut:#5b6f73;--bd:#d9e2e3;--ac:#0e6b6b;--acfg:#fff;--warn:#9a6700;--warnbg:#fff3d6;--bad:#b42318;--badbg:#fde4e1;--ok:#2f7d4f;--okbg:#dff3e6;--info:#1f5fa8;--infobg:#e1edfa;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a1c;--card:#172426;--fg:#e6f0f1;--mut:#93a9ac;--bd:#27393c;--ac:#4fb3b3;--acfg:#06201f;--warn:#f0c15a;--warnbg:#3a2f0f;--bad:#ff9d93;--badbg:#401b17;--ok:#7fd3a0;--okbg:#14301f;--info:#8fc0f2;--infobg:#142a42}}
+:root[data-theme="dark"]{--bg:#0f1a1c;--card:#172426;--fg:#e6f0f1;--mut:#93a9ac;--bd:#27393c;--ac:#4fb3b3;--acfg:#06201f;--warn:#f0c15a;--warnbg:#3a2f0f;--bad:#ff9d93;--badbg:#401b17;--ok:#7fd3a0;--okbg:#14301f;--info:#8fc0f2;--infobg:#142a42}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 20px 0;max-width:1100px;margin:auto}
+h1{font-size:20px;margin:0 0 2px}h2{font-size:16px;margin:22px 0 10px}
+.sub{color:var(--mut);font-size:13px}
+.demo{display:inline-block;background:var(--warnbg);color:var(--warn);border-radius:6px;padding:2px 8px;font-size:12px;margin-left:8px}
+nav{display:flex;gap:4px;overflow-x:auto;padding:14px 20px 0;max-width:1100px;margin:auto;border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mut);padding:8px 12px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ac);border-color:var(--ac);font-weight:600}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+main{max-width:1100px;margin:auto;padding:4px 20px 40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px}
+.kpi b{display:block;font-size:24px;margin-top:2px}.kpi span{color:var(--mut);font-size:13px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);font-size:14px;vertical-align:middle}
+th{color:var(--mut);font-weight:600;font-size:13px}tr:last-child td{border-bottom:0}
+tr.row{cursor:pointer}tr.row:hover td{background:var(--bg)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.b{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600}
+.b.ok{background:var(--okbg);color:var(--ok)}.b.warn{background:var(--warnbg);color:var(--warn)}.b.bad{background:var(--badbg);color:var(--bad)}.b.info{background:var(--infobg);color:var(--info)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 10px}
+input,select{font:inherit;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:7px 10px}
+input[type=search]{min-width:240px}
+.btn{background:var(--ac);color:var(--acfg);border:0;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn.ghost{background:none;color:var(--ac);border:1px solid var(--ac)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.note{color:var(--mut);font-size:13px;margin:8px 0}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Correduría Demo C.A. <span class="demo">Datos ficticios</span></h1>
+  <div class="sub">Gestión de cartera de seguros · prototipo navegable</div>
+</header>
+<nav role="tablist" id="nav"></nav>
+<main id="view"></main>
+<div id="toast" role="status"></div>
+<script>
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+const addD=n=>{const d=new Date(TODAY);d.setDate(d.getDate()+n);return d};
+const fmtD=d=>d.toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
+const usd=n=>'$'+Math.round(n).toLocaleString('es-VE');
+const CANAL={CORR:'Corredor',ASEG:'Aseguradora',FIN:'Financiadora'};
+const SUBR=['Incendio','Automóvil Casco','Hospitalización Colectivo','Vida Individual','Fianzas','RC General'];
+// off = días hasta vencimiento; cq = cuota siguiente {n, monto, off, paid}
+let P=[
+ {id:'P-1001',cli:'Distribuidora Los Andes C.A.',tel:'584141110001',ins:'Mercantil',sub:'Incendio',grp:'Patrimoniales',prima:4800,off:6,canal:'ASEG',prod:'Directo',pct:18,pp:0,cq:{n:'3/4',monto:1200,off:-5,paid:false}},
+ {id:'P-1002',cli:'Distribuidora Los Andes C.A.',tel:'584141110001',ins:'Mercantil',sub:'Automóvil Casco',grp:'Patrimoniales',prima:2100,off:41,canal:'FIN',prod:'Directo',pct:15,pp:0,cq:{n:'5/10',monto:210,off:9,paid:false}},
+ {id:'P-1003',cli:'María Fernanda Rojas',tel:'584242220002',ins:'Seguros Caracas',sub:'Hospitalización Individual',grp:'Personas',prima:1650,off:12,canal:'ASEG',prod:'Carlos Mendoza',pct:22,pp:60,cq:{n:'1/1',monto:1650,off:-12,paid:true}},
+ {id:'P-1004',cli:'Inversiones Valle Verde, C.A.',tel:'584123330003',ins:'Mapfre La Seguridad',sub:'Hospitalización Colectivo',grp:'Personas',prima:18400,off:27,canal:'CORR',prod:'Ana Salazar',pct:12,pp:50,cq:{n:'6/12',monto:1533,off:3,paid:false}},
+ {id:'P-1005',cli:'José Luis Pérez',tel:'584164440004',ins:'Universitas',sub:'Vida Individual',grp:'Personas',prima:960,off:88,canal:'ASEG',prod:'Carlos Mendoza',pct:30,pp:60,cq:{n:'9/12',monto:80,off:-2,paid:false}},
+ {id:'P-1006',cli:'Constructora Orinoco C.A.',tel:'584245550005',ins:'Estar Seguros',sub:'Fianzas',grp:'Obligacionales',prima:7200,off:-3,canal:'CORR',prod:'Directo',pct:20,pp:0,cq:{n:'1/1',monto:7200,off:-20,paid:true}},
+ {id:'P-1007',cli:'Clínica Santa Elena',tel:'584126660006',ins:'Seguros Qualitas',sub:'RC General',grp:'Obligacionales',prima:5300,off:19,canal:'FIN',prod:'Ana Salazar',pct:17,pp:50,cq:{n:'2/6',monto:883,off:14,paid:false}},
+ {id:'P-1008',cli:'Luisa Carolina Gil',tel:'584147770007',ins:'Seguros Venezuela',sub:'Automóvil Casco',grp:'Patrimoniales',prima:780,off:55,canal:'ASEG',prod:'Directo',pct:15,pp:0,cq:{n:'2/3',monto:260,off:-8,paid:false}},
+ {id:'P-1009',cli:'Inversiones Valle Verde, C.A.',tel:'584123330003',ins:'Mercantil',sub:'Incendio',grp:'Patrimoniales',prima:3900,off:33,canal:'CORR',prod:'Ana Salazar',pct:18,pp:50,cq:{n:'4/6',monto:650,off:6,paid:false}}
+];
+const T=['Resumen','Clientes','Renovaciones','Cobranza','Comisiones'];
+let tab=0,sel=null,q='',canalF='',log=[];
+const $=s=>document.querySelector(s);
+const toast=m=>{const t=$('#toast');t.textContent=m;t.className='on';clearTimeout(toast.h);toast.h=setTimeout(()=>t.className='',2600)};
+const dl=p=>p.off;
+const sev=o=>o<0?['bad','Vencida hace '+(-o)+' d']:o<=7?['bad','T-7 · '+o+' d']:o<=15?['warn','T-15 · '+o+' d']:o<=30?['info','T-30 · '+o+' d']:['ok',o+' d'];
+const cuotaB=c=>c.paid?'<span class="b ok">Pagada</span>':c.off<0?'<span class="b bad">Vencida '+(-c.off)+' d</span>':c.off<=7?'<span class="b warn">Vence en '+c.off+' d</span>':'<span class="b info">Pendiente</span>';
+const com=p=>p.prima*p.pct/100, prodC=p=>com(p)*p.pp/100;
+function nav(){$('#nav').innerHTML=T.map((t,i)=>`<button role="tab" aria-selected="${i==tab}" onclick="go(${i})">${t}</button>`).join('')}
+function go(i){tab=i;sel=null;nav();render()}
+function wa(id){const p=P.find(x=>x.id==id);const msg=`Hola ${p.cli}, le escribimos de su correduría. Su póliza de ${p.sub} (${p.ins}) vence el ${fmtD(addD(p.off))}. ¿Le gestionamos la renovación?`;
+ window.open('https://wa.me/'+p.tel+'?text='+encodeURIComponent(msg),'_blank');log.push({id,t:new Date()});toast('Gestión registrada: WhatsApp a '+p.cli)}
+function pay(id){const p=P.find(x=>x.id==id);p.cq.paid=true;toast('Cuota '+p.cq.n+' marcada como pagada (con evidencia)');render()}
+function viewResumen(){
+ const act=P.filter(p=>p.off>=0),v30=act.filter(p=>p.off<=30),cv=P.filter(p=>!p.cq.paid&&p.cq.off<0);
+ const cm=P.reduce((s,p)=>s+com(p),0),pr=P.reduce((s,p)=>s+prodC(p),0);
+ return `<div class="grid">
+ <div class="kpi"><span>Pólizas vigentes</span><b>${act.length}</b></div>
+ <div class="kpi"><span>Prima anual en cartera</span><b>${usd(act.reduce((s,p)=>s+p.prima,0))}</b></div>
+ <div class="kpi"><span>Vencen en 30 días</span><b>${v30.length}</b></div>
+ <div class="kpi"><span>Cuotas vencidas</span><b>${cv.length}</b></div>
+ <div class="kpi"><span>Neto del corredor (est.)</span><b>${usd(cm-pr)}</b></div></div>
+ <div class="two"><div><h2>Renovaciones que requieren acción</h2>${tbl(['Cliente','Póliza','Vence'],P.filter(p=>p.off<=30).sort((a,b)=>a.off-b.off).slice(0,5).map(p=>`<tr><td>${p.cli}</td><td>${p.sub}</td><td><span class="b ${sev(p.off)[0]}">${sev(p.off)[1]}</span></td></tr>`))}</div>
+ <div><h2>Cuotas vencidas por canal</h2>${tbl(['Cliente','Canal','Monto'],cv.map(p=>`<tr><td>${p.cli}</td><td>${CANAL[p.canal]}</td><td class="num">${usd(p.cq.monto)}</td></tr>`))}</div></div>
+ <p class="note">Con canal Aseguradora o Financiadora, el corredor no cobra: hace seguimiento y registra la confirmación.</p>`}
+function tbl(h,r){return `<div class="box"><table style="min-width:0"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.join('')||'<tr><td colspan="9">Sin registros.</td></tr>'}</table></div>`}
+function viewClientes(){
+ const names=[...new Set(P.map(p=>p.cli))].filter(n=>n.toLowerCase().includes(q.toLowerCase()));
+ if(sel){const ps=P.filter(p=>p.cli==sel);return `<p><button class="btn ghost" onclick="sel=null;render()">Volver a clientes</button></p><h2>${sel}</h2>
+ <p class="sub">Ficha 360° · ${ps.length} póliza(s) · prima total ${usd(ps.reduce((s,p)=>s+p.prima,0))}</p>
+ ${tbl(['Póliza','Ramo','Aseguradora','Vence','Prima','Cuota'],ps.map(p=>`<tr><td>${p.id}</td><td>${p.grp} · ${p.sub}</td><td>${p.ins}</td><td><span class="b ${sev(p.off)[0]}">${fmtD(addD(p.off))}</span></td><td class="num">${usd(p.prima)}</td><td>${cuotaB(p.cq)}</td></tr>`))}
+ <p class="note">Aquí se crearía una nueva póliza para este cliente sin volver a registrar sus datos.</p>`}
+ return `<div class="bar"><input type="search" placeholder="Buscar cliente…" value="${q}" oninput="q=this.value;render(1)" aria-label="Buscar cliente"></div>
+ <div class="box"><table><tr><th>Cliente</th><th>Pólizas</th><th class="num">Prima anual</th><th>Próximo vencimiento</th></tr>${names.map(n=>{const ps=P.filter(p=>p.cli==n),m=Math.min(...ps.map(p=>p.off));return `<tr class="row" tabindex="0" onclick="sel='${n.replace(/'/g,"\\'")}';render()"><td>${n}</td><td>${ps.length}</td><td class="num">${usd(ps.reduce((s,p)=>s+p.prima,0))}</td><td><span class="b ${sev(m)[0]}">${sev(m)[1]}</span></td></tr>`}).join('')||'<tr><td colspan="4">Sin resultados.</td></tr>'}</table></div>`}
+function viewRen(){return `<p class="note">Ordenadas por vencimiento. El botón abre WhatsApp con el mensaje prellenado y registra la gestión.</p>
+ <div class="box"><table><tr><th>Vence</th><th>Cliente</th><th>Ramo</th><th>Aseguradora</th><th class="num">Prima</th><th></th></tr>${[...P].sort((a,b)=>a.off-b.off).map(p=>`<tr><td><span class="b ${sev(p.off)[0]}">${sev(p.off)[1]}</span><br><span class="sub">${fmtD(addD(p.off))}</span></td><td>${p.cli}</td><td>${p.sub}</td><td>${p.ins}</td><td class="num">${usd(p.prima)}</td><td><button class="btn" onclick="wa('${p.id}')">WhatsApp</button></td></tr>`).join('')}</table></div>
+ <p class="note">Gestiones registradas en esta sesión: ${log.length}</p>`}
+function viewCob(){const r=P.filter(p=>!canalF||p.canal==canalF).sort((a,b)=>a.cq.off-b.cq.off);
+ return `<div class="bar"><select onchange="canalF=this.value;render()" aria-label="Canal de pago"><option value="">Todos los canales</option>${Object.entries(CANAL).map(([k,v])=>`<option value="${k}" ${canalF==k?'selected':''}>${v}</option>`).join('')}</select></div>
+ <div class="box"><table><tr><th>Cliente</th><th>Póliza</th><th>Cuota</th><th>Canal</th><th class="num">Monto</th><th>Estado</th><th></th></tr>${r.map(p=>`<tr><td>${p.cli}</td><td>${p.sub}</td><td>${p.cq.n}</td><td><span class="b info">${CANAL[p.canal]}</span></td><td class="num">${usd(p.cq.monto)}</td><td>${cuotaB(p.cq)}</td><td>${p.cq.paid?'':`<button class="btn ghost" onclick="pay('${p.id}')">Marcar pagada</button>`}</td></tr>`).join('')}</table></div>`}
+function viewCom(){const g={};P.forEach(p=>{const k=p.prod;g[k]=g[k]||{n:0,pr:0,c:0,pc:0};g[k].n++;g[k].pr+=p.prima;g[k].c+=com(p);g[k].pc+=prodC(p)});
+ return `<p class="note">Cálculo: prima × tarifa de la aseguradora por subramo, menos la parte acordada con el productor.</p>
+ <div class="box"><table><tr><th>Productor</th><th class="num">Pólizas</th><th class="num">Prima</th><th class="num">Comisión aseguradora</th><th class="num">Parte del productor</th><th class="num">Neto corredor</th></tr>${Object.entries(g).map(([k,v])=>`<tr><td>${k}</td><td class="num">${v.n}</td><td class="num">${usd(v.pr)}</td><td class="num">${usd(v.c)}</td><td class="num">${usd(v.pc)}</td><td class="num"><b>${usd(v.c-v.pc)}</b></td></tr>`).join('')}</table></div>
+ <h2>Detalle por póliza</h2><div class="box"><table><tr><th>Póliza</th><th>Aseguradora · ramo</th><th class="num">Tarifa</th><th class="num">Comisión</th><th>Productor (%)</th></tr>${P.map(p=>`<tr><td>${p.id}</td><td>${p.ins} · ${p.sub}</td><td class="num">${p.pct}%</td><td class="num">${usd(com(p))}</td><td>${p.prod} (${p.pp}%)</td></tr>`).join('')}</table></div>`}
+function render(keep){const v=[viewResumen,viewClientes,viewRen,viewCob,viewCom][tab]();const f=document.activeElement&&document.activeElement.type=='search';$('#view').innerHTML=v;if(keep&&f){const i=$('input[type=search]');i.focus();i.setSelectionRange(q.length,q.length)}}
+nav();render();
+</script>
+</body>
+</html>
